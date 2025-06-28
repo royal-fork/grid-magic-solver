@@ -21,9 +21,20 @@ const SudokuGrid: React.FC<SudokuGridProps> = ({
   const boxSize = getBoxSize(size);
 
   const handleInputChange = (row: number, col: number, value: string) => {
-    const numValue = value === '' ? 0 : parseInt(value);
-    if (isNaN(numValue) || numValue < 0 || numValue > size) return;
-    onChange(row, col, numValue);
+    console.log('Input change:', { row, col, value, isAnimating });
+    
+    // Allow empty string or valid numbers
+    if (value === '') {
+      onChange(row, col, 0);
+      return;
+    }
+    
+    const numValue = parseInt(value);
+    
+    // Check if it's a valid number within range
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= size) {
+      onChange(row, col, numValue);
+    }
   };
 
   const getCellClasses = (row: number, col: number, value: number) => {
@@ -48,8 +59,8 @@ const SudokuGrid: React.FC<SudokuGridProps> = ({
         "border-b-2 border-b-slate-600": isBottomBorder,
         // Animation state
         "animate-pulse": isAnimating && !isOriginal && value !== 0,
-        // Disabled state
-        "cursor-not-allowed opacity-75": isAnimating,
+        // Disabled state - only disable if original cell or animating
+        "cursor-not-allowed opacity-75": isOriginal || isAnimating,
       }
     );
   };
@@ -73,18 +84,24 @@ const SudokuGrid: React.FC<SudokuGridProps> = ({
         }}
       >
         {grid.map((row, rowIndex) =>
-          row.map((cell, colIndex) => (
-            <div key={`${rowIndex}-${colIndex}`} className={getCellSize()}>
-              <input
-                type="text"
-                value={cell === 0 ? '' : cell.toString()}
-                onChange={(e) => handleInputChange(rowIndex, colIndex, e.target.value)}
-                className={getCellClasses(rowIndex, colIndex, cell)}
-                disabled={isAnimating || originalGrid[rowIndex][colIndex] !== 0}
-                maxLength={size > 9 ? 2 : 1}
-              />
-            </div>
-          ))
+          row.map((cell, colIndex) => {
+            const isOriginal = originalGrid[rowIndex][colIndex] !== 0;
+            
+            return (
+              <div key={`${rowIndex}-${colIndex}`} className={getCellSize()}>
+                <input
+                  type="text"
+                  value={cell === 0 ? '' : cell.toString()}
+                  onChange={(e) => handleInputChange(rowIndex, colIndex, e.target.value)}
+                  className={getCellClasses(rowIndex, colIndex, cell)}
+                  disabled={isOriginal || isAnimating}
+                  maxLength={size > 9 ? 2 : 1}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+              </div>
+            );
+          })
         )}
       </div>
     </div>
