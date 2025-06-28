@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import SudokuGrid from '@/components/SudokuGrid';
-import { solveSudokuAnimated, generatePuzzle, isValidSudoku } from '@/utils/sudokuSolver';
+import { solveSudokuAnimated, generatePuzzle, isValidSudoku, getDifficulty } from '@/utils/sudokuSolver';
 import { Play, RotateCcw, Shuffle, Pause } from 'lucide-react';
 
 const Index = () => {
@@ -15,6 +14,37 @@ const Index = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [solveStatus, setSolveStatus] = useState('');
   const [solveTime, setSolveTime] = useState(0);
+
+  // Estimate human solving time based on grid size and difficulty
+  const getEstimatedHumanTime = (gridSize: number, currentGrid: number[][]): number => {
+    const difficulty = getDifficulty(currentGrid);
+    let baseTime: number;
+    
+    // Base times in minutes for different grid sizes
+    switch (gridSize) {
+      case 4:
+        baseTime = 2; // 2 minutes for 4x4
+        break;
+      case 9:
+        baseTime = 15; // 15 minutes for 9x9
+        break;
+      case 16:
+        baseTime = 60; // 60 minutes for 16x16
+        break;
+      default:
+        baseTime = 15;
+    }
+    
+    // Multiply by difficulty factor
+    const difficultyMultiplier = {
+      'Easy': 0.7,
+      'Medium': 1.0,
+      'Hard': 1.5,
+      'Expert': 2.5
+    }[difficulty] || 1.0;
+    
+    return Math.round(baseTime * difficultyMultiplier * 60 * 1000); // Convert to milliseconds
+  };
 
   const handleGridSizeChange = useCallback((size: string) => {
     const newSize = parseInt(size);
@@ -179,8 +209,11 @@ const Index = () => {
               )}
 
               {solveTime > 0 && (
-                <div className="text-center text-sm text-slate-600">
-                  <p>Solved in {solveTime}ms</p>
+                <div className="text-center text-sm text-slate-600 space-y-1">
+                  <p className="font-medium">Algorithm: {solveTime}ms</p>
+                  <p className="text-xs text-slate-500">
+                    Human average: ~{Math.round(getEstimatedHumanTime(gridSize, originalGrid) / 60000)}min
+                  </p>
                 </div>
               )}
             </CardContent>
